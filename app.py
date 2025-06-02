@@ -9,6 +9,7 @@ from plots import (
     create_life_expectancy_boxplot
 )
 from model import train_model, predict_life_expectancy, plot_feature_importance
+from maps import create_map_view
 
 # Set page to full width
 st.set_page_config(layout="wide")
@@ -49,7 +50,7 @@ with tab1:
         value=int(df['year'].max())
     )
     
-    # Filter data for selected year
+    # Filter data for selected year (global, no country filter!)
     year_data = df[df['year'] == selected_year]
     
     # Create 4 columns for metrics
@@ -83,27 +84,42 @@ with tab1:
             help="Total number of countries in the dataset for the selected year"
         )
     
-    # Add scatter plot
+    # Add scatter plot (global)
     st.plotly_chart(
         create_gdp_life_expectancy_scatter(df, selected_year),
         use_container_width=True
     )
     
-    # Add world map
+    # Add 3D map (global)
+    st.subheader("Interactive 3D Map")
+    st.sidebar.subheader("Map Layers")
+    selected_layers = [
+        layer
+        for layer in ["Life Expectancy", "GDP per Capita", "Poverty Rate"]
+        if st.sidebar.checkbox(layer, True)
+    ]
+    if selected_layers:
+        st.pydeck_chart(
+            create_map_view(df, selected_year, selected_layers)
+        )
+    else:
+        st.error("Please choose at least one layer above.")
+    
+    # Add world map (global)
     st.subheader("Global Distribution")
     st.plotly_chart(
         create_world_map(df, selected_year),
         use_container_width=True
     )
     
-    # Add GDP vs Poverty scatter
+    # Add GDP vs Poverty scatter (global)
     st.subheader("Economic Indicators")
     st.plotly_chart(
         create_gdp_poverty_scatter(df, selected_year),
         use_container_width=True
     )
     
-    # Add life expectancy box plot
+    # Add life expectancy box plot (global)
     st.subheader("Life Expectancy Distribution")
     st.plotly_chart(
         create_life_expectancy_boxplot(df, selected_year),
