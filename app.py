@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import io
+from plots import create_gdp_life_expectancy_scatter, create_country_trend_plot # import from plots.py
+from model import train_model, predict_life_expectancy, plot_feature_importance
 
 # Set page to full width
 st.set_page_config(layout="wide")
@@ -16,7 +18,7 @@ def load_data():
 df = load_data()
 
 # Debug: Print column names
-st.write("Available columns:", df.columns.tolist())
+#st.write("Available columns:", df.columns.tolist())
 
 # Header and Subtitle
 st.title("Worldwide Analysis of Quality of Life and Economic Factors")
@@ -74,9 +76,100 @@ with tab1:
             value=f"{len(year_data['country'].unique())}",
             help="Total number of countries in the dataset for the selected year"
         )
+    
+    # Add scatter plot
+    st.plotly_chart(
+        create_gdp_life_expectancy_scatter(df, selected_year),
+        use_container_width=True
+    )
+    
+    # Add model section
+    st.header("Life Expectancy Prediction Model")
+    
+    # Train model
+    model, feature_ranges = train_model(df)
+    
+    # Create input fields
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        gdp = st.number_input(
+            "GDP per Capita (USD)",
+            min_value=float(feature_ranges['GDP per capita'][0]),
+            max_value=float(feature_ranges['GDP per capita'][1]),
+            value=float(feature_ranges['GDP per capita'][0]),
+            step=1000.0
+        )
+    
+    with col2:
+        poverty_rate = st.number_input(
+            "Poverty Rate (%)",
+            min_value=float(feature_ranges['headcount_ratio_upper_mid_income_povline'][0]),
+            max_value=float(feature_ranges['headcount_ratio_upper_mid_income_povline'][1]),
+            value=float(feature_ranges['headcount_ratio_upper_mid_income_povline'][0]),
+            step=1.0
+        )
+    
+    with col3:
+        year = st.number_input(
+            "Year",
+            min_value=int(feature_ranges['year'][0]),
+            max_value=int(feature_ranges['year'][1]),
+            value=int(feature_ranges['year'][1]),
+            step=1
+        )
+    
+    # Make prediction
+    if st.button("Predict Life Expectancy"):
+        prediction = predict_life_expectancy(model, gdp, poverty_rate, year)
+        st.metric(
+            label="Predicted Life Expectancy",
+            value=f"{prediction:.1f} years"
+        )
+    
+    # Show feature importance
+    st.subheader("Feature Importance")
+    st.plotly_chart(
+        plot_feature_importance(model, ['GDP per capita', 'Poverty Rate', 'Year']),
+        use_container_width=True
+    )
 
 with tab2:
-    st.write("Country Deep Dive content will be added here")
+    st.header("Country Deep Dive")
+    
+    # Country selection
+    countries = sorted(df['country'].unique())
+    default_countries = ['United States', 'Russia', 'China', 'Germany', 'Thailand']
+    selected_countries = st.multiselect(
+        "Select Countries to Compare",
+        options=countries,
+        default=default_countries
+    )
+    
+    if selected_countries:
+        # Create trend plot
+        st.plotly_chart(
+            create_country_trend_plot(df, selected_countries),
+            use_container_width=True
+        )
+        
+        # Show summary statistics
+        st.subheader("Summary Statistics")
+        
+        # Filter data for selected countries
+        country_data = df[df['country'].isin(selected_countries)]
+        
+        # Calculate statistics
+        stats = country_data.groupby('country').agg({
+            'Life Expectancy (IHME)': ['mean', 'min', 'max'],
+            'GDP per capita': ['mean', 'min', 'max'],
+            'headcount_ratio_upper_mid_income_povline': ['mean', 'min', 'max']
+        }).round(2)
+        
+        # Display statistics
+        st.dataframe(stats)
+    else:
+        st.info("Please select at least one country to view the trends.")
 
 with tab3:
     st.header("Data Explorer")
