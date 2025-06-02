@@ -15,6 +15,9 @@ def load_data():
 # Load the data
 df = load_data()
 
+# Debug: Print column names
+st.write("Available columns:", df.columns.tolist())
+
 # Header and Subtitle
 st.title("Worldwide Analysis of Quality of Life and Economic Factors")
 st.markdown("""
@@ -28,7 +31,49 @@ tab1, tab2, tab3 = st.tabs(["Global Overview", "Country Deep Dive", "Data Explor
 
 # Tab content will be added later
 with tab1:
-    st.write("Global Overview content will be added here")
+    st.header("Global Overview")
+    
+    # Year selection slider
+    selected_year = st.slider(
+        "Select Year",
+        min_value=int(df['year'].min()),
+        max_value=int(df['year'].max()),
+        value=int(df['year'].max())
+    )
+    
+    # Filter data for selected year
+    year_data = df[df['year'] == selected_year]
+    
+    # Create 4 columns for metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(
+            label="Average Life Expectancy",
+            value=f"{year_data['Life Expectancy (IHME)'].mean():.1f} years",
+            help="Mean life expectancy across all countries"
+        )
+    
+    with col2:
+        st.metric(
+            label="Median GDP per Capita",
+            value=f"${year_data['GDP per capita'].median():,.0f}",
+            help="Median GDP per capita across all countries"
+        )
+    
+    with col3:
+        st.metric(
+            label="Average Poverty Rate",
+            value=f"{year_data['headcount_ratio_upper_mid_income_povline'].mean():.1f}%",
+            help="Mean poverty rate (upper-middle income poverty line) across all countries"
+        )
+    
+    with col4:
+        st.metric(
+            label="Number of Countries",
+            value=f"{len(year_data['country'].unique())}",
+            help="Total number of countries in the dataset for the selected year"
+        )
 
 with tab2:
     st.write("Country Deep Dive content will be added here")
@@ -42,10 +87,11 @@ with tab3:
     with col1:
         # Country selection
         countries = sorted(df['country'].unique())
+        default_countries = ['United States', 'Russia', 'China', 'Germany', 'Thailand']
         selected_countries = st.multiselect(
             "Select Countries",
             options=countries,
-            default=countries[:5]  # Default to first 5 countries
+            default=default_countries
         )
     
     with col2:
