@@ -1,7 +1,13 @@
 import streamlit as st
 import pandas as pd
 import io
-from plots import create_gdp_life_expectancy_scatter, create_country_trend_plot # import from plots.py
+from plots import (
+    create_gdp_life_expectancy_scatter,
+    create_country_trend_plot,
+    create_world_map,
+    create_gdp_poverty_scatter,
+    create_life_expectancy_boxplot
+)
 from model import train_model, predict_life_expectancy, plot_feature_importance
 
 # Set page to full width
@@ -80,6 +86,27 @@ with tab1:
     # Add scatter plot
     st.plotly_chart(
         create_gdp_life_expectancy_scatter(df, selected_year),
+        use_container_width=True
+    )
+    
+    # Add world map
+    st.subheader("Global Distribution")
+    st.plotly_chart(
+        create_world_map(df, selected_year),
+        use_container_width=True
+    )
+    
+    # Add GDP vs Poverty scatter
+    st.subheader("Economic Indicators")
+    st.plotly_chart(
+        create_gdp_poverty_scatter(df, selected_year),
+        use_container_width=True
+    )
+    
+    # Add life expectancy box plot
+    st.subheader("Life Expectancy Distribution")
+    st.plotly_chart(
+        create_life_expectancy_boxplot(df, selected_year),
         use_container_width=True
     )
     
